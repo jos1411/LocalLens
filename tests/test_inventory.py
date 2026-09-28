@@ -118,9 +118,11 @@ class InventoryTests(unittest.TestCase):
             st_mtime_ns=101,
         )
 
-        with patch("locallens.inventory.os.fstat", side_effect=[before, after]):
-            with self.assertRaisesRegex(OSError, "changed during hashing"):
-                self.inventory._hash_file(path)
+        with (
+            patch("locallens.inventory.os.fstat", side_effect=[before, after]),
+            self.assertRaisesRegex(OSError, "changed during hashing"),
+        ):
+            self.inventory._hash_file(path)
 
     def test_roots_are_isolated_in_a_shared_database(self) -> None:
         other_root = Path(self.tempdir.name) / "other"

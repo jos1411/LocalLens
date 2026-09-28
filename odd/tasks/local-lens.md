@@ -18,13 +18,13 @@ Forecast: 600–900 authored diff lines, likely above ~400-line review budget. S
 
 ## Tasks
 - [x] B1 — Restored delegation in this project's Git repository. Check: read-only `gentle-ai-explore` launched and confirmed root and branch. No commit (environment unblock, not source work).
-- [~] T1 — Build safe incremental file inventory and duplicate detection with tests. Route: delegated bounded writer (multiple non-trivial files). Checks: pytest focused, Ruff. Commit: pending. Review: pending.
-- [ ] T2 — Add local text/PDF extraction, SQLite FTS5 indexing/search with tests. Route: delegated bounded writer (multiple non-trivial files). Checks: pytest focused, Ruff. Commit: pending. Review: pending.
+- [x] T1 — Safe incremental inventory and exact duplicate detection. Route: delegated bounded writer plus independent verifier (native assessment unassessable). Checks: unittest 8/8 PASS, compileall PASS, parent spot check 8/8 PASS; pytest/Ruff unavailable (not run). Commit: `682c39d7a296a7108b20c7119d331ec12622edc0` (443 added lines). Review: inspect blocked with `empty_candidate_base_ref_required` on root commit; not approved, record unavailable and continue with ordinary checks.
+- [~] T2 — Add local text/PDF extraction, SQLite FTS5 indexing/search with tests. Route: delegated bounded writer (multiple non-trivial files). Checks: pytest focused, Ruff. Commit: pending. Review: pending.
 - [ ] T3 — Expose indexing/search/duplicates/largest via CLI, write README and integration tests. Route: delegated bounded writer (multiple non-trivial files). Checks: full pytest, Ruff, CLI smoke. Commit: pending. Review: pending.
 - [ ] T4 — Publish source-only public repository and feature branch after verifying ignored/private paths. Route: parent git/gh state and delivery. Checks: remote identity, tracked-file audit, push outcome. Commit: n/a.
 
 ## Current progress
-B1 verified in new Pi session: repository root is this directory; bounded read-only subagent successfully ran. T1 in progress; no source written yet, tests not run. Project remains on unborn `feat/local-lens`.
+B1 complete. T1 implemented and committed; 8 unit tests pass, compileall passes, independent verifier and parent spot check observed. Native inspect could not establish review for the root commit (empty base ref required); no review approval claimed. Running authored total: 443 lines. T2 in progress on `feat/local-lens`.
 
 ## Next step
-Delegate T1 to bounded writer with test-first checks. Keep user files untouched and index output untracked.
+Implement T2 with PDF extraction, FTS5 search and deterministic tests; install isolated tooling/dependencies when possible, then rerun all checks. Keep DB and user files untracked.
