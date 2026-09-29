@@ -1,5 +1,5 @@
 """LocalLens local-only file inventory."""
 
-from .inventory import FileRecord, Inventory, ScanResult
+from .inventory import ContentIndexResult, FileRecord, Inventory, ScanResult, SearchResult
 
-__all__ = ["FileRecord", "Inventory", "ScanResult"]
+__all__ = ["ContentIndexResult", "FileRecord", "Inventory", "ScanResult", "SearchResult"]

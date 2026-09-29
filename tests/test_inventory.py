@@ -105,6 +105,34 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(result.removed, 1)
         self.assertEqual(self.inventory.largest(self.root), [])
 
+    def test_symlink_swapped_directory_is_not_followed(self) -> None:
+        nested = self.root / "nested"
+        nested.mkdir()
+        (nested / "inside.txt").write_bytes(b"inside")
+        outside = Path(self.tempdir.name) / "outside"
+        outside.mkdir()
+        (outside / "private.txt").write_bytes(b"private")
+        original_open = os.open
+        swapped = False
+
+        def swap_nested_directory(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if path == "nested" and dir_fd is not None and not swapped:
+                swapped = True
+                (nested / "inside.txt").unlink()
+                nested.rmdir()
+                nested.symlink_to(outside, target_is_directory=True)
+            if dir_fd is None:
+                return original_open(path, flags, mode)
+            return original_open(path, flags, mode, dir_fd=dir_fd)
+
+        with patch("locallens.inventory.os.open", side_effect=swap_nested_directory):
+            result = self.inventory.scan(self.root)
+
+        self.assertTrue(swapped)
+        self.assertGreaterEqual(result.skipped, 1)
+        self.assertEqual(self.inventory.largest(self.root), [])
+
     def test_hash_file_rejects_metadata_changed_during_hashing(self) -> None:
         path = self.write("changing.txt", b"content")
         before = SimpleNamespace(
@@ -118,11 +146,12 @@ class InventoryTests(unittest.TestCase):
             st_mtime_ns=101,
         )
 
+        descriptor = os.open(path, os.O_RDONLY)
         with (
             patch("locallens.inventory.os.fstat", side_effect=[before, after]),
             self.assertRaisesRegex(OSError, "changed during hashing"),
         ):
-            self.inventory._hash_file(path)
+            self.inventory._hash_file(descriptor)
 
     def test_roots_are_isolated_in_a_shared_database(self) -> None:
         other_root = Path(self.tempdir.name) / "other"
@@ -137,6 +166,23 @@ class InventoryTests(unittest.TestCase):
                          [str((self.root / "root.txt").absolute())])
         self.assertEqual([entry.path for entry in self.inventory.largest(other_root)],
                          [str((other_root / "other.txt").absolute())])
+
+    def test_root_with_symlink_ancestor_is_rejected(self) -> None:
+        alias_parent = Path(self.tempdir.name) / "alias-parent"
+        try:
+            alias_parent.symlink_to(Path(self.tempdir.name), target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"symlinks unavailable: {error}")
+
+        with self.assertRaisesRegex(ValueError, "not a symlink"):
+            self.inventory.scan(alias_parent / "root")
+
+    def test_unsupported_platform_refuses_unsafe_scan(self) -> None:
+        with (
+            patch("locallens.inventory.sys.platform", "darwin"),
+            self.assertRaisesRegex(RuntimeError, "descriptor-relative traversal"),
+        ):
+            self.inventory.scan(self.root)
 
     def test_invalid_root_has_a_clear_error(self) -> None:
         with self.assertRaisesRegex(ValueError, "existing directory"):
