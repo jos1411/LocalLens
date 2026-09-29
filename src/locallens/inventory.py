@@ -64,6 +64,7 @@ class ContentIndexResult:
     indexed: int
     no_text: int
     failed: int
+    scan: ScanResult
 
 
 @dataclass(frozen=True)
@@ -236,7 +237,7 @@ class Inventory:
 
     def index_content(self, root: str | Path) -> ContentIndexResult:
         """Scan a root and index its pending local text without query-time extraction."""
-        self.scan(root)
+        scan = self.scan(root)
         root_id = self._existing_root_id(root)
         pending = self._connection.execute(
             "SELECT path FROM files WHERE root_id = ? AND content_status = 'pending'",
@@ -267,7 +268,7 @@ class Inventory:
                 no_text += 1
             else:
                 failed += 1
-        return ContentIndexResult(len(pending), indexed, no_text, failed)
+        return ContentIndexResult(len(pending), indexed, no_text, failed, scan)
 
     def search(self, root: str | Path, query: str, limit: int = 20) -> list[SearchResult]:
         """Search a root's already-indexed content using literal, safe FTS terms."""
